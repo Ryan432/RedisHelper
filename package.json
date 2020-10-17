@@ -1,0 +1,28 @@
+{
+  "name": "RedisHelper",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Helper packe to work with Redis, supported ReJson module.",
+  "main": "tests.js",
+  "scripts": {
+    "test": "node tests.js",
+    "dev": "nodemon tests.js"
+  },
+  "author": "Ran Amar",
+  "license": "ISC",
+  "dependencies": {
+    "aigle": "^1.14.1",
+    "lodash": "^4.17.20",
+    "redis": "^3.0.2",
+    "redis-rejson": "^1.0.0"
+  },
+  "devDependencies": {
+    "babel-eslint": "^10.1.0",
+    "eslint": "^7.10.0",
+    "eslint-config-airbnb-base": "^14.2.0",
+    "eslint-import-resolver-alias": "^1.1.2",
+    "eslint-plugin-import": "^2.22.1",
+    "husky": "^4.3.0",
+    "nodemon": "^2.0.4"
+  }
+}
