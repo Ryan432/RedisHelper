@@ -1,13 +1,14 @@
 /* eslint-disable no-use-before-define */
 /* eslint-disable max-classes-per-file */
-class ValidationError extends Error {
+class RedisHelperError extends Error {
 	constructor({ message, extraDetails }) {
 		super();
 
 		this.message = message;
+		this.success = false;
 		this.extraDetails = extraDetails;
 		this.stackTrace = this.stack;
 	}
 }
 
-export { ValidationError };
+export { RedisHelperError };
