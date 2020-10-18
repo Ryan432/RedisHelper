@@ -1,9 +1,9 @@
 {
-	"name": "RedisHelper",
-	"version": "0.0.2",
+	"name": "redis-json-helper",
+	"version": "0.0.4",
 	"type": "module",
 	"description": "Helper packe to work with Redis, supported ReJson module.",
-	"main": "tests.js",
+	"main": "./src/RedisHelper",
 	"scripts": {
 		"test": "node tests.js",
 		"dev": "nodemon tests.js"

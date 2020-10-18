@@ -1,5 +1,5 @@
 import RedisHelper from './src/RedisHelper.js';
-const sleep = (duration) => new Promise((resolve) => setTimeout(resolve, duration));
+// const sleep = (duration) => new Promise((resolve) => setTimeout(resolve, duration));
 
 const connectRedis = async () => {
 	try {

@@ -42,7 +42,7 @@ class RedisHelper {
 	#encryptRedisObjectKey = (objectKeyName) => Buffer.from(String(objectKeyName), 'utf8').toString('hex');
 	#decryptRedisObjectKey = (objectKeyName) => Buffer.from(objectKeyName, 'hex').toString('utf8');
 
-	static createRedisConnection = async ({ redisHost, redisPort }) => {
+	static createRedisConnection = async ({ redisHost, redisPort = 6379 }) => {
 		const redisClient = redis.createClient(redisPort, redisHost);
 		return new RedisHelper({ redisClient });
 	};
