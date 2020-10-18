@@ -2,6 +2,7 @@ import aigle from 'aigle';
 import _ from 'lodash';
 import redis from 'redis';
 import rejson from 'redis-rejson';
+import Stopwatch from 'timer-stopwatch';
 import { RedisHelperError } from './Errors.js';
 rejson(redis);
 
@@ -46,6 +47,8 @@ class RedisHelper {
 		return new RedisHelper({ redisClient });
 	};
 
+	// ---------------- Insert functions ----------------
+
 	setRedisKey = (keyName, value) => {
 		return new Promise((resolve, reject) => {
 			this.#redisClient.set(keyName, value, (error, result) => {
@@ -71,19 +74,6 @@ class RedisHelper {
 		});
 	};
 
-	checkKeyExist = (keyName) => {
-		return new Promise((resolve, reject) => {
-			this.#redisClient.exists(keyName, (err, result) => {
-				if (err) {
-					reject(new RedisHelperError({ message: 'Something went wrong.', extraDetails: err }));
-				} else {
-					const keyExist = result === 1;
-					resolve(keyExist);
-				}
-			});
-		});
-	};
-
 	setRedisCollectionObj = (collectionName, collectionIdentifier, collectionItemKey, collectionItemValue, createCollectionItemKey = false, encryptKey = false) => {
 		createCollectionItemKey = createCollectionItemKey ? 'NX' : 'XX';
 		const collectionKeyName = `${collectionName}:${collectionIdentifier}`;
@@ -102,6 +92,7 @@ class RedisHelper {
 				if (!isKeyExist) {
 					createNewJsonKey = await this.setRedisJSONKey(collectionKeyName);
 				}
+
 				console.log({ objectItemKey });
 				this.#redisClient.json_set(collectionKeyName, objectItemKey, objectItemValue, createCollectionItemKey, (err, result) => {
 					if (err) {
@@ -131,6 +122,145 @@ class RedisHelper {
 		});
 	};
 
+	// ---------------- Search functions ----------------
+
+	getRedisHashedValues = (hash, keysArray) => {
+		const parsedValues = [];
+		return new Promise((resolve, reject) => {
+			const sw = new Stopwatch();
+			sw.start();
+			this.#redisClient.hmget(hash, keysArray, (err, values) => {
+				if (err) {
+					reject(new RedisHelperError({ message: `Failed to get hashed values: ${keysArray}, hash: ${hash}`, extraDetails: err }));
+				} else {
+					_.each(values, (value) => {
+						parsedValues.push(JSON.parse(value));
+					});
+					sw.stop();
+					// console.log(JSON.stringify({ sw }, 2, 5));
+					resolve({ success: true, data: parsedValues, took: `${sw.ms} mls` });
+				}
+			});
+		});
+	};
+
+	getRedisHashedValue = (hash, key) => {
+		return new Promise((resolve, reject) => {
+			this.#redisClient.hget(hash, key, (err, values) => {
+				if (err) {
+					reject(new RedisHelperError({ message: `Failed to get hashed key: ${key}, hash: ${hash}`, extraDetails: err }));
+				} else {
+					resolve({ success: true, data: JSON.parse(values) });
+				}
+			});
+		});
+	};
+
+	getRedisJSONKey = (key, jsonPath = '.') => {
+		return new Promise((resolve, reject) => {
+			this.#redisClient.json_get(key, jsonPath, (err, result) => {
+				if (err) {
+					reject(new RedisHelperError({ message: `Failed to get key: ${key}`, extraDetails: err }));
+				} else {
+					resolve({ success: true, data: JSON.parse(result) });
+				}
+			});
+		});
+	};
+
+	// ---------------- Utils && Info functions ----------------
+
+	checkKeyExist = (keyName) => {
+		return new Promise((resolve, reject) => {
+			this.#redisClient.exists(keyName, (err, result) => {
+				if (err) {
+					reject(new RedisHelperError({ message: 'Something went wrong.', extraDetails: err }));
+				} else {
+					const keyExist = result === 1;
+					resolve(keyExist);
+				}
+			});
+		});
+	};
+
+	getRedisKeys = (keysPattern) => {
+		return new Promise((resolve, reject) => {
+			this.#redisClient.keys(keysPattern, (err, result) => {
+				if (err) {
+					reject(new RedisHelperError({ message: `Failed to get the keys with pattern: ${keysPattern}`, extraDetails: err }));
+				} else {
+					resolve({ success: true, data: result, result });
+				}
+			});
+		});
+	};
+
+	// Return keys of an hash
+	getRedisHashedKeys = (hash) => {
+		return new Promise((resolve, reject) => {
+			this.#redisClient.hkeys(hash, (err, result) => {
+				if (err) {
+					reject(new RedisHelperError({ message: `Failed to get keys of hash: ${hash}`, extraDetails: err }));
+				} else {
+					resolve({ success: true, data: result, result });
+				}
+			});
+		});
+	};
+
+	// ---------------- Delete functions ----------------
+
+	deleteRedisKey = (keyName) => {
+		return new Promise((resolve, reject) => {
+			this.#redisClient.del(keyName, (err, result) => {
+				if (err) {
+					reject(new RedisHelperError({ message: `Failed to delete the key ${keyName}`, extraDetails: err }));
+				} else {
+					console.log({ result });
+					switch (result) {
+						case 0:
+							resolve({ success: true, message: "The key wasn't found in Redis.", result });
+							break;
+						default:
+							resolve({ success: true, message: `${keyName} Deleted successfully.`, result });
+							break;
+					}
+				}
+			});
+		});
+	};
+
+	deleteRedisKeysPattern = (keysPattern) => {
+		// eslint-disable-next-line no-async-promise-executor
+		return new Promise(async (resolve, reject) => {
+			const getKeysWithPattern = await this.getRedisKeys(keysPattern);
+			const { data } = getKeysWithPattern;
+			if (_.size(data) !== 0) {
+				this.#redisClient.del(data, (err, result) => {
+					if (err) {
+						reject(new RedisHelperError({ message: `Failed to delete keys with pattern: ${keysPattern}`, extraDetails: err }));
+					} else {
+						resolve({ success: true, message: `${result} keys deleted.`, removedKeys: data, data: result, result });
+					}
+				});
+			} else {
+				resolve({ success: true, message: 'Found 0 keys with the pattern supplied.' });
+			}
+		});
+	};
+
+	deleteRedisJSONKey = (key, path = '.') => {
+		return new Promise((resolve, reject) => {
+			this.#redisClient.json_del(key, path, (err, result) => {
+				if (err) {
+					reject(new RedisHelperError({ message: `Failed to delete json key: ${key} at path ${path}.`, extraDetails: err }));
+				} else {
+					resolve({ success: true, message: `${key} deleted successfully.`, result });
+				}
+			});
+		});
+	};
+
 	deleteRedisHashedKey = (hash, keyName) => {
 		return new Promise((resolve, reject) => {
 			this.#redisClient.hdel(hash, keyName, (err, result) => {
@@ -153,123 +283,12 @@ class RedisHelper {
 		});
 	};
 
-	getRedisHashedValues = (hash, keysArray) => {
-		const parsedValues = [];
-		return new Promise((resolve, reject) => {
-			this.#redisClient.hmget(hash, keysArray, (err, values) => {
-				if (err) {
-					reject(new RedisHelperError({ message: `Failed to get hashed values: ${keysArray}, hash: ${hash}`, extraDetails: err }));
-				} else {
-					_.each(values, (value) => {
-						parsedValues.push(JSON.parse(value));
-					});
-					resolve({ success: true, data: parsedValues });
-				}
-			});
-		});
-	};
+	// ---------------- Query functions ----------------
 
-	// need to test
-	getRedisHashedValue = (hash, key) => {
-		return new Promise((resolve, reject) => {
-			this.#redisClient.hget(hash, key, (err, values) => {
-				if (err) {
-					reject(new RedisHelperError({ message: `Failed to get hashed key: ${key}, hash: ${hash}`, extraDetails: err }));
-				} else {
-					resolve({ success: true, data: JSON.parse(values) });
-				}
-			});
-		});
-	};
-
-	// need to test
-	deleteRedisJSONKey = (key, path = '.') => {
-		return new Promise((resolve, reject) => {
-			this.#redisClient.json_del(key, path, (err, result) => {
-				if (err) {
-					reject(new RedisHelperError({ message: `Failed to delete json key: ${key} at path ${path}.`, extraDetails: err }));
-				} else {
-					resolve({ success: true, message: `${key} deleted successfully.`, result });
-				}
-			});
-		});
-	};
-
-	// need to test
-	getRedisJSONKey = (key, jsonPath = '.') => {
-		return new Promise((resolve, reject) => {
-			this.#redisClient.json_get(key, jsonPath, (err, result) => {
-				if (err) {
-					reject(new RedisHelperError({ message: `Failed to get key: ${key}`, extraDetails: err }));
-				} else {
-					resolve({ success: true, data: result });
-				}
-			});
-		});
-	};
-
-	// need to test
-	deleteRedisKey = (keyName) => {
-		return new Promise((resolve, reject) => {
-			this.#redisClient.del(keyName, (err, result) => {
-				if (err) {
-					reject(new RedisHelperError({ message: `Failed to delete the key ${keyName}`, extraDetails: err }));
-				} else {
-					switch (result) {
-						case 0:
-							resolve({ success: true, message: "The key wasn't found in Redis." }, result);
-							break;
-						default:
-							resolve({ success: true, message: `${keyName} Deleted successfully.` }, result);
-							break;
-					}
-				}
-			});
-		});
-	};
-
-	// need to test.
-	getRedisKeys = (keysPattern) => {
-		return new Promise((resolve, reject) => {
-			this.#redisClient.keys(keysPattern, (err, result) => {
-				if (err) {
-					reject(new RedisHelperError({ message: `Failed to get the keys with pattern: ${keysPattern}`, extraDetails: err }));
-				} else {
-					resolve({ success: true, data: result, result });
-				}
-			});
-		});
-	};
-	// need to test
-	getRedisHashedKeys = (hash) => {
-		return new Promise((resolve, reject) => {
-			this.#redisClient.hkeys(hash, (err, result) => {
-				if (err) {
-					reject(new RedisHelperError({ message: `Failed to get keys of hash: ${hash}`, extraDetails: err }));
-				} else {
-					resolve({ success: true, data: result, result });
-				}
-			});
-		});
-	};
-
-	deleteRedisKeysPattern = (keysPattern) => {
-		// eslint-disable-next-line no-async-promise-executor
-		return new Promise(async (resolve, reject) => {
-			const getKeysWithPattern = await this.getRedisKeys(keysPattern);
-			if (_.size(getKeysWithPattern) !== 0) {
-				this.#redisClient.del(getKeysWithPattern, (err, result) => {
-					if (err) {
-						reject(new RedisHelperError({ message: `Failed to delete keys with pattern: ${keysPattern}`, extraDetails: err }));
-					} else {
-						resolve({ success: true, data: result, result });
-					}
-				});
-			} else {
-				resolve({ success: true, message: 'Found 0 keys with the pattern supplied.' });
-			}
-		});
-	};
+	insert = (queryObject) => {};
+	select = (queryObject) => {};
+	update = (queryObject) => {};
+	upsert = (queryObject) => {};
 }
 
 export default RedisHelper;
