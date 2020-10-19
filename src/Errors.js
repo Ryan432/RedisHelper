@@ -11,4 +11,4 @@ class RedisHelperError extends Error {
 	}
 }
 
-export { RedisHelperError };
+module.exports = { RedisHelperError };

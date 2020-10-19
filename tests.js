@@ -1,4 +1,5 @@
-import RedisHelper from './src/RedisHelper.js';
+// import RedisHelper from './src/RedisHelper.js';
+const RedisHelper = require('./src/RedisHelper');
 // const sleep = (duration) => new Promise((resolve) => setTimeout(resolve, duration));
 
 const connectRedis = async () => {

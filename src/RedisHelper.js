@@ -1,9 +1,10 @@
-import aigle from 'aigle';
-import _ from 'lodash';
-import redis from 'redis';
-import rejson from 'redis-rejson';
-import Stopwatch from 'timer-stopwatch';
-import { RedisHelperError } from './Errors.js';
+const aigle = require('aigle');
+const _ = require('lodash');
+const redis = require('redis');
+const rejson = require('redis-rejson');
+const Stopwatch = require('timer-stopwatch');
+const { RedisHelperError } = require('./Errors');
+
 rejson(redis);
 
 class RedisHelper {
@@ -100,7 +101,7 @@ class RedisHelper {
 						reject(new RedisHelperError({ message: `Failed to set collection object, collectionName: ${collectionName}`, extraDetails: err }));
 					} else {
 						console.log({ result });
-						resolve({ success: true, keyCreated: createNewJsonKey ?? 'Key exist', result });
+						resolve({ success: true, keyCreated: createNewJsonKey || 'Key exist', result });
 					}
 				});
 			} catch (err) {
@@ -291,4 +292,5 @@ class RedisHelper {
 	upsert = (queryObject) => {};
 }
 
-export default RedisHelper;
+module.exports = RedisHelper;
+// export default RedisHelper;
