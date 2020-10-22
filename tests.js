@@ -1,6 +1,14 @@
 // import RedisHelper from './src/RedisHelper.js';
 const RedisHelper = require('./src/RedisHelper');
 // const sleep = (duration) => new Promise((resolve) => setTimeout(resolve, duration));
+const _ = require('lodash');
+class Test {
+	name = 'test';
+
+	function = () => {
+		console.log('test');
+	};
+}
 
 const connectRedis = async () => {
 	try {
@@ -18,18 +26,27 @@ const connectRedis = async () => {
 
 		// const checkKeyExist = await redisConnection.checkKeyExist('json');
 		// console.log({ checkKeyExist });
-
-		// const setRedisCollection = await redisConnection.setRedisCollectionObj('users', '1', 'lastName', 'hdhd', true);
+		// const setRedisCollection = await redisConnection.setRedisCollectionObj('services', 'externalApis', 'objectClass', object, true);
 		// console.log({ setRedisCollection });
 
-		// const setRedisWithHash = await redisConnection.setRedisKeyWithHash('hash', 'key', { foo: 'bar', test: 'test' });
-		// console.log({ setRedisWithHash });
+		// const classTest = new Error();
+		// classTest.function = () => {
+		// 	return 'function';
+		// };
+		// const object = { class: new Test() };
+		// console.log(object);
+		const classObj = new Test();
+		console.log(JSON.stringify({ test: classObjצא }));
+		const setRedisWithHash = await redisConnection.setRedisKeyWithHash('externalApis', 'MTB', classObj.toString('hex'));
+		console.log({ setRedisWithHash });
 
 		// const deleteRedisHashedKey = await redisConnection.deleteRedisHashedKey('hash', 'deleteKey');
 		// console.log({ deleteRedisHashedKey });
 
-		// const getHashedValues = await redisConnection.getRedisHashedValues('hash', ['deleteKey', 'hashedKey', 'key']);
-		// console.log(JSON.stringify({ getHashedValues }, 2, 5));
+		const getHashedValues = await redisConnection.getRedisHashedValues('externalApis', ['MTB']);
+		const { data } = getHashedValues;
+		console.log(data);
+		console.log(JSON.parse(data[0]));
 
 		// const getHashedValue = await redisConnection.getRedisHashedValue('hash', 'key');
 		// console.log(JSON.stringify({ getHashedValue }, 2, 5));
@@ -55,6 +72,7 @@ const connectRedis = async () => {
 		// const deleteRedisKeysPattern = await redisConnection.deleteRedisKeysPattern('drop*');
 		// console.log(JSON.stringify({ deleteRedisKeysPattern }, 2, 5));
 	} catch (err) {
+		console.log(err);
 		console.log(JSON.stringify({ err }, 2, 5));
 	}
 };

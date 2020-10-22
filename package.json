@@ -1,6 +1,6 @@
 {
 	"name": "redis-json-helper",
-	"version": "0.0.5",
+	"version": "0.0.6",
 	"description": "Helper packe to work with Redis, supported ReJson module.",
 	"main": "./src/RedisHelper",
 	"scripts": {

@@ -94,13 +94,13 @@ class RedisHelper {
 					createNewJsonKey = await this.setRedisJSONKey(collectionKeyName);
 				}
 
-				console.log({ objectItemKey });
+				// console.log({ objectItemKey });
 				this.#redisClient.json_set(collectionKeyName, objectItemKey, objectItemValue, createCollectionItemKey, (err, result) => {
 					if (err) {
-						console.log({ err });
+						// console.log({ err });
 						reject(new RedisHelperError({ message: `Failed to set collection object, collectionName: ${collectionName}`, extraDetails: err }));
 					} else {
-						console.log({ result });
+						// console.log({ result });
 						resolve({ success: true, keyCreated: createNewJsonKey || 'Key exist', result });
 					}
 				});
@@ -217,7 +217,7 @@ class RedisHelper {
 				if (err) {
 					reject(new RedisHelperError({ message: `Failed to delete the key ${keyName}`, extraDetails: err }));
 				} else {
-					console.log({ result });
+					// console.log({ result });
 					switch (result) {
 						case 0:
 							resolve({ success: true, message: "The key wasn't found in Redis.", result });
